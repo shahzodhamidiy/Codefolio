@@ -1,0 +1,275 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{padding:1rem 0;font-family:Arial,sans-serif}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);align-items:center}
+.toolbar-label{font-size:13px;color:var(--color-text-secondary)}
+.tbtn{padding:5px 12px;font-size:12px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.tbtn:hover{background:var(--color-background-secondary)}
+.tbtn.primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.tbtn.primary:hover{background:#0C447C}
+.invoice{background:#fff;color:#222;padding:40px 44px;width:100%;font-size:14px;line-height:1.5}
+[contenteditable]{outline:none;border-bottom:1px dashed transparent;cursor:text}
+[contenteditable]:hover{border-bottom-color:#aaa}
+[contenteditable]:focus{border-bottom-color:#185FA5;background:rgba(24,95,165,0.06);border-radius:2px}
+.inv-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
+.logo-wrap{display:flex;align-items:flex-start;gap:16px}
+.logo-circle{width:72px;height:72px;border-radius:50%;border:3px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#E87722,#1B3A6B) border-box;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;position:relative}
+.logo-circle .change-hint{display:none;position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:#888;white-space:nowrap}
+.logo-circle:hover .change-hint{display:block}
+.company-name{font-size:20px;font-weight:700;color:#222}
+.company-sub{font-size:13px;color:#555;margin-top:1px}
+.inv-right{text-align:right}
+.inv-right .inv-label{font-size:14px;font-weight:700;color:#222}
+.inv-right .inv-big{font-size:24px;font-weight:700;color:#222;margin:2px 0}
+.inv-right .inv-small{font-size:13px;color:#555}
+.date-row{font-size:13px;margin-bottom:18px}
+.date-row strong{font-weight:700}
+.bill-from-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px}
+.bf-label{font-weight:700;font-size:13px;margin-bottom:4px}
+.bf-line{font-size:13px;color:#333;display:block}
+.dashed-divider{border:none;border-top:1.5px dashed #bbb;margin:18px 0}
+.charges-title{font-weight:700;font-size:14px;margin-bottom:6px}
+table.ct{width:100%;border-collapse:collapse}
+table.ct thead th{font-weight:700;font-size:13px;padding:4px 0 6px;border-bottom:1px solid #ddd;text-align:left}
+table.ct thead th:last-child{text-align:right}
+table.ct tbody td{font-size:13px;padding:4px 0;vertical-align:middle}
+table.ct tbody td:last-child{text-align:right;white-space:nowrap}
+.memo-label{color:#555;font-size:13px;margin-right:8px}
+.row-del{opacity:0;margin-left:6px;background:none;border:none;cursor:pointer;color:#c00;font-size:13px;padding:0 3px}
+tr:hover .row-del{opacity:1}
+.total-line{text-align:right;font-weight:700;font-size:14px;padding-top:10px;margin-top:6px;border-top:1px solid #ddd}
+.note-block{margin-top:22px}
+.note-title{font-weight:700;font-size:13px;margin-bottom:4px}
+.note-body{font-size:13px;color:#333;line-height:1.7;white-space:pre-wrap}
+.footer-block{margin-top:36px;text-align:center;font-size:13px;color:#333;border-top:1px solid #eee;padding-top:16px}
+.footer-block .footer-bold{font-weight:700;margin-bottom:4px}
+.add-item-btn{font-size:12px;color:#185FA5;background:none;border:none;cursor:pointer;padding:6px 0;display:flex;align-items:center;gap:3px}
+.add-item-btn:hover{color:#0C447C}
+.icon-picker-popup{position:fixed;z-index:999;background:#fff;border:1px solid #ccc;border-radius:8px;padding:10px;display:none;flex-wrap:wrap;gap:4px;width:240px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.icon-picker-popup.open{display:flex}
+.icon-picker-popup i{font-size:20px;padding:6px;cursor:pointer;border-radius:4px;border:1px solid transparent}
+.icon-picker-popup i:hover{border-color:#185FA5;background:#e6f1fb}
+.icon-btn{cursor:pointer;margin-right:4px;font-size:14px;vertical-align:middle;color:#555}
+.icon-btn:hover{color:#185FA5}
+</style>
+
+<div class="wrap">
+<div class="toolbar">
+  <span class="toolbar-label">Invoice editor</span>
+  <button class="tbtn" id="addRowBtn"><i class="ti ti-plus" aria-hidden="true"></i> Add line item</button>
+  <button class="tbtn" id="toggleNoteBtn"><i class="ti ti-notes" aria-hidden="true"></i> Toggle note</button>
+  <button class="tbtn primary" id="dlBtn"><i class="ti ti-download" aria-hidden="true"></i> Download PDF</button>
+</div>
+
+<div class="invoice" id="invoiceEl">
+
+  <!-- Header: logo + company + invoice meta -->
+  <div class="inv-top">
+    <div class="logo-wrap">
+      <div class="logo-circle" id="logoBtnArea" title="Click to change logo icon">
+        <svg id="logoSvg" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="44" height="44">
+          <circle cx="22" cy="22" r="20" stroke="#1B3A6B" stroke-width="2.5" fill="none"/>
+          <path d="M22 8 C14 14,10 22,16 30 C20 35,28 34,32 28 C36 22,30 12,22 8Z" fill="#E87722" opacity="0.85"/>
+          <path d="M22 8 C30 14,34 22,28 30 C24 35,16 34,12 28 C8 22,14 12,22 8Z" fill="#1B3A6B" opacity="0.7"/>
+        </svg>
+        <span class="change-hint">change icon</span>
+      </div>
+      <div>
+        <div class="company-name" contenteditable="true">Joni Bek LLC</div>
+        <div class="company-sub" contenteditable="true">Deerfield Twp</div>
+        <div class="company-sub" contenteditable="true">Loveland, OH</div>
+      </div>
+    </div>
+    <div class="inv-right">
+      <div class="inv-label">INVOICE <span contenteditable="true">#00025</span></div>
+      <div class="inv-big">$ <span contenteditable="true" id="headerAmt">2,790.60</span></div>
+      <div class="inv-small">Amount Due on before:</div>
+      <div class="inv-small" contenteditable="true">25/04/2026</div>
+    </div>
+  </div>
+
+  <!-- Date -->
+  <div class="date-row"><strong>Date:</strong>&nbsp;&nbsp;<span contenteditable="true">02 June, 2026</span></div>
+
+  <!-- Billed to / From -->
+  <div class="bill-from-grid">
+    <div>
+      <div class="bf-label">Billed to:</div>
+      <span class="bf-line" contenteditable="true">SHIRINBOY ISAKULOV</span>
+      <span class="bf-line" contenteditable="true">123 Anywhere St., Any City</span>
+      <span class="bf-line" contenteditable="true">hello@reallygreatsite.com</span>
+    </div>
+    <div>
+      <div class="bf-label">From:</div>
+      <span class="bf-line" contenteditable="true">Joni Bek LLC</span>
+      <span class="bf-line" contenteditable="true">9633 Kely Drive Loveland, OH 45140</span>
+      <span class="bf-line" contenteditable="true">jonibekllc@gmail.com</span>
+    </div>
+  </div>
+
+  <hr class="dashed-divider">
+
+  <!-- Charges -->
+  <div class="charges-title">Charges</div>
+  <table class="ct" id="chargesTable">
+    <thead>
+      <tr><th>Item Description</th><th>Total Price</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <button class="add-item-btn" id="addRowBtn2"><i class="ti ti-plus" aria-hidden="true"></i> Add item</button>
+  <div class="total-line">Total Amount: <span id="totalAmt">$2,790.60</span></div>
+
+  <!-- Note -->
+  <div class="note-block" id="noteBlock">
+    <div class="note-title">NOTE</div>
+    <div class="note-body" contenteditable="true">If no payment is made within 3 months,
+we will repossess (tow) the equipment.
+The remaining balance will then be sent to court for collection,
+according to a warning received from Mid Country Bank Association</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-block">
+    <div class="footer-bold">Contact us with any questions about your service or bill:</div>
+    <div>Call <span contenteditable="true">513 377 3985</span></div>
+    <div>Email: <span contenteditable="true">jonibekllc@gmail.com</span></div>
+  </div>
+
+</div>
+</div>
+
+<div class="icon-picker-popup" id="iconPicker">
+  <i class="ti ti-feather"></i><i class="ti ti-building"></i><i class="ti ti-truck"></i>
+  <i class="ti ti-star"></i><i class="ti ti-bolt"></i><i class="ti ti-briefcase"></i>
+  <i class="ti ti-rocket"></i><i class="ti ti-tool"></i><i class="ti ti-home"></i>
+  <i class="ti ti-leaf"></i><i class="ti ti-flame"></i><i class="ti ti-diamond"></i>
+  <i class="ti ti-shield"></i><i class="ti ti-crown"></i><i class="ti ti-anchor"></i>
+  <i class="ti ti-car"></i><i class="ti ti-compass"></i><i class="ti ti-circle-plus"></i>
+  <i class="ti ti-credit-card"></i><i class="ti ti-map-pin"></i><i class="ti ti-chart-bar"></i>
+  <i class="ti ti-cash"></i><i class="ti ti-coin"></i><i class="ti ti-receipt"></i>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const rows=[
+  {memo:"Truck Monthly payment May",price:2070.00},
+  {memo:"Late fee from MidCountry Bank",price:559.00},
+  {memo:"Toll New-Jersey",price:79.50},
+  {memo:"Toll",price:82.10},
+  {memo:"Monthly amortization",price:0.00}
+];
+
+function fmt(n){return"$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtInput(s){return parseFloat((s||"").replace(/[^0-9.-]/g,""))||0;}
+
+function calcTotal(){
+  let t=0;
+  document.querySelectorAll(".price-td").forEach(td=>t+=fmtInput(td.innerText));
+  const s=fmt(t);
+  document.getElementById("totalAmt").innerText=s;
+  document.getElementById("headerAmt").innerText=t.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function makeRow(r){
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td style="padding:3px 0;">
+    <span class="memo-label">Memo:</span><i class="ti ti-circle icon-btn row-icon" aria-hidden="true"></i><span contenteditable="true" class="memo-text">${r.memo}</span>
+    <button class="row-del" title="Remove">✕</button>
+  </td>
+  <td class="price-td" contenteditable="true">${fmt(r.price)}</td>`;
+  tr.querySelector(".row-del").onclick=()=>{tr.remove();calcTotal();};
+  tr.querySelector(".price-td").addEventListener("input",calcTotal);
+  tr.querySelector(".row-icon").addEventListener("click",function(e){openPicker(e,this);});
+  return tr;
+}
+
+const tbody=document.getElementById("tbody");
+rows.forEach(r=>tbody.appendChild(makeRow(r)));
+calcTotal();
+
+function addRow(){tbody.appendChild(makeRow({memo:"New item",price:0}));calcTotal();}
+document.getElementById("addRowBtn").onclick=addRow;
+document.getElementById("addRowBtn2").onclick=addRow;
+
+let noteVisible=true;
+document.getElementById("toggleNoteBtn").onclick=function(){
+  noteVisible=!noteVisible;
+  document.getElementById("noteBlock").style.display=noteVisible?"block":"none";
+};
+
+let pickerTarget=null;
+const picker=document.getElementById("iconPicker");
+
+function openPicker(e,target){
+  e.stopPropagation();
+  pickerTarget=target;
+  const r=target.getBoundingClientRect();
+  picker.style.left=Math.min(r.left,window.innerWidth-250)+"px";
+  picker.style.top=(r.bottom+4)+"px";
+  picker._mode="row";
+  picker.classList.add("open");
+}
+
+picker.querySelectorAll("i").forEach(ic=>{
+  ic.onclick=function(e){
+    e.stopPropagation();
+    if(pickerTarget&&picker._mode==="row"){
+      const cls=Array.from(this.classList).find(c=>c.startsWith("ti-"));
+      if(cls) pickerTarget.className=pickerTarget.className.replace(/ti-[\w-]+/,cls);
+    } else if(picker._mode==="logo"){
+      const cls=Array.from(this.classList).find(c=>c.startsWith("ti-"));
+      const svg=document.getElementById("logoSvg");
+      if(svg){
+        const par=svg.parentNode;
+        const newI=document.createElement("i");
+        newI.id="logoSvg";
+        newI.className="ti "+cls;
+        newI.style.cssText="font-size:34px;color:#E87722;";
+        newI.setAttribute("aria-hidden","true");
+        par.replaceChild(newI,svg);
+      } else {
+        const existing=document.getElementById("logoSvg");
+        if(existing) existing.className="ti "+cls;
+      }
+    }
+    picker.classList.remove("open");
+  };
+});
+
+document.addEventListener("click",()=>picker.classList.remove("open"));
+
+document.getElementById("logoBtnArea").onclick=function(e){
+  e.stopPropagation();
+  const r=this.getBoundingClientRect();
+  picker.style.left=r.left+"px";
+  picker.style.top=(r.bottom+4)+"px";
+  picker._mode="logo";
+  picker.classList.add("open");
+};
+
+document.getElementById("dlBtn").addEventListener("click",async function(){
+  const btn=this;
+  btn.disabled=true;
+  btn.innerHTML='<i class="ti ti-loader" aria-hidden="true"></i> Generating…';
+  const inv=document.getElementById("invoiceEl");
+  const editables=inv.querySelectorAll("[contenteditable]");
+  editables.forEach(el=>el.setAttribute("contenteditable","false"));
+  const dels=inv.querySelectorAll(".row-del,.add-item-btn");
+  dels.forEach(el=>el.style.visibility="hidden");
+  try{
+    const canvas=await html2canvas(inv,{scale:2,useCORS:true,backgroundColor:"#ffffff",logging:false});
+    const {jsPDF}=window.jspdf;
+    const w=canvas.width/2,h=canvas.height/2;
+    const pdf=new jsPDF({unit:"px",format:[w,h],orientation:h>w?"portrait":"landscape"});
+    pdf.addImage(canvas.toDataURL("image/png"),"PNG",0,0,w,h);
+    pdf.save("invoice.pdf");
+  }catch(err){console.error(err);}
+  editables.forEach(el=>el.setAttribute("contenteditable","true"));
+  dels.forEach(el=>el.style.visibility="");
+  btn.disabled=false;
+  btn.innerHTML='<i class="ti ti-download" aria-hidden="true"></i> Download PDF';
+});
+</script>
